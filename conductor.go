@@ -53,15 +53,16 @@ func (c *Conductor) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	resp := &conductorResponse{false, w}
+
 	// get other params, form/body/etc...
 	// 	params := make(map[string]interface{})
 
 	// should we give an option to reuse pointered structs across functions?
 	// what about returning values to be reused in next handler?
-
 	for _, handler := range handlers {
 		// get params for handler
-		args, err := paramsFor(handler, w, r, urlParams)
+		args, err := paramsFor(handler, resp, r, urlParams)
 		if err != nil {
 			// TODO(ttacon): need better stuff to do than break...
 			// 500 or 404?
@@ -77,10 +78,29 @@ func (c *Conductor) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		e.Call(args)
 
 		// can we check header map to see if written to?
-		if len(w.Header()) > 0 {
+		if resp.hasWritten {
 			break
 		}
 	}
+}
+
+type conductorResponse struct {
+	hasWritten bool
+	w          http.ResponseWriter
+}
+
+func (c *conductorResponse) Header() http.Header {
+	return c.w.Header()
+}
+
+func (c *conductorResponse) Write(b []byte) (int, error) {
+	c.hasWritten = true
+	return c.w.Write(b)
+}
+
+func (c *conductorResponse) WriteHeader(i int) {
+	c.hasWritten = true
+	c.w.WriteHeader(i)
 }
 
 func paramsFor(h Handler, w http.ResponseWriter, r *http.Request, params map[string]interface{}) ([]reflect.Value, error) {

@@ -113,3 +113,71 @@ func fullBodiedPrimitiveFunction(f fullBodied, req *http.Request, resp http.Resp
 	resp.WriteHeader(http.StatusOK)
 	resp.Write([]byte(m))
 }
+
+type struct1 struct {
+	MyId int
+}
+
+type struct2 struct {
+	MyId2 int
+}
+
+func twoStructsOneFunc(s1 struct1, s2 struct2, resp http.ResponseWriter) {
+	resp.Write([]byte(fmt.Sprintf("%v/%v", s1, s2)))
+}
+
+func TestTwoStructs(t *testing.T) {
+	c := NewConductor()
+	c.Post("/twostructs/:MyId/onefunc/:MyId2", twoStructsOneFunc)
+
+	req, err := http.NewRequest("POST", "/twostructs/2/onefunc/1", nil)
+	if err != nil {
+		t.Skip(err)
+	}
+
+	resp := httptest.NewRecorder()
+	c.ServeHTTP(resp, req)
+	resp.Flush()
+
+	if resp.Code != http.StatusOK {
+		t.Errorf("Expected status code %d, got %d", http.StatusOK, resp.Code)
+	}
+
+	body := resp.Body.String()
+	expected := "{2}/{1}"
+	if body != expected {
+		t.Errorf("Expected body to be %q, got: %q", expected, body)
+	}
+}
+
+func TestReturnAtProperTime(t *testing.T) {
+	c := NewConductor()
+	c.Put("/posh", a, b)
+
+	req, err := http.NewRequest("PUT", "/posh", nil)
+	if err != nil {
+		t.Skip(err)
+	}
+
+	resp := httptest.NewRecorder()
+	c.ServeHTTP(resp, req)
+	resp.Flush()
+
+	if resp.Code != http.StatusOK {
+		t.Errorf("Expected status code %d, got %d", http.StatusOK, resp.Code)
+	}
+
+	body := resp.Body.String()
+	expected := "a"
+	if body != expected {
+		t.Errorf("Expected body to be %q, got: %q", expected, body)
+	}
+}
+
+func a(resp http.ResponseWriter) {
+	resp.Write([]byte("a"))
+}
+
+func b(resp http.ResponseWriter) {
+	resp.Write([]byte("b"))
+}
