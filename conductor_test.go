@@ -36,9 +36,7 @@ type yolo struct {
 }
 
 func yoloOnlyId(yolo yolo, req *http.Request, resp http.ResponseWriter) {
-	fmt.Println("yolo: ", yolo)
 	resp.WriteHeader(http.StatusOK)
 	v := fmt.Sprintf("id: %d", yolo.Id)
-	fmt.Printf("val: %q\n", v)
 	resp.Write([]byte(v))
 }

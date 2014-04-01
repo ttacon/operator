@@ -62,7 +62,6 @@ func (c *Conductor) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	for _, handler := range handlers {
 		// get params for handler
 		args, err := paramsFor(handler, w, r, urlParams)
-		fmt.Println("err: ", err)
 		if err != nil {
 			// TODO(ttacon): need better stuff to do than break...
 			// 500 or 404?
@@ -75,7 +74,6 @@ func (c *Conductor) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		//		h := reflect.New(ty)
 		//		e := h.Elem()
 		e := reflect.ValueOf(handler)
-		fmt.Println("e: ", e)
 		e.Call(args)
 
 		// can we check header map to see if written to?
@@ -86,16 +84,16 @@ func (c *Conductor) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func paramsFor(h Handler, w http.ResponseWriter, r *http.Request, params map[string]interface{}) ([]reflect.Value, error) {
-	t := reflect.TypeOf(h)
-	if t.Kind() != reflect.Func {
-		return nil, fmt.Errorf("%v is not of reflect.Kind Func", t)
+	ty := reflect.TypeOf(h)
+	if ty.Kind() != reflect.Func {
+		return nil, fmt.Errorf("%v is not of reflect.Kind Func", ty)
 	}
 
-	numArgs := t.NumIn()
+	numArgs := ty.NumIn()
 	vals := make([]reflect.Value, numArgs)
 	for i := 0; i < numArgs; i++ {
-		t := t.In(i)
-		if !validParam(t) {
+		t := ty.In(i)
+		if !validParam(reflect.New(t).Elem()) {
 			return nil, fmt.Errorf("params to handler must be struct, "+
 				"map, http.Request or http.ResponseWriter, type was: %v",
 				t)
@@ -106,7 +104,7 @@ func paramsFor(h Handler, w http.ResponseWriter, r *http.Request, params map[str
 			continue
 		}
 
-		if _, ok := t.(http.ResponseWriter); ok {
+		if t.String() == "http.ResponseWriter" {
 			vals[i] = reflect.ValueOf(w)
 			continue
 		}
@@ -243,17 +241,16 @@ var (
 	HttpResponseWriter http.ResponseWriter
 )
 
-func validParam(t reflect.Type) bool {
+func validParam(t reflect.Value) bool {
 	if t.Kind() == reflect.Struct {
 		return true
 	}
 
-	fmt.Println(reflect.TypeOf(HttpResponseWriter))
-	if ok := t.Implements(reflect.TypeOf(HttpResponseWriter)); ok {
+	if t.Type().String() == "http.ResponseWriter" {
 		return true
 	}
 
-	if t == reflect.TypeOf(HttpRequestType) {
+	if t.Type() == reflect.TypeOf(HttpRequestType) {
 		return true
 	}
 
