@@ -118,9 +118,9 @@ func paramsFor(h Handler, w http.ResponseWriter, r *http.Request, params map[str
 		e := val.Elem()
 		for j := 0; j < t.NumField(); j++ {
 			f := e.Field(j)
-			param, ok := params[t.Field(i).Name]
+			param, ok := params[t.Field(j).Name]
 			if !ok {
-				param, ok = params[strings.ToLower(t.Field(i).Name)]
+				param, ok = params[strings.ToLower(t.Field(j).Name)]
 			}
 
 			if !ok {
@@ -142,7 +142,6 @@ func paramsFor(h Handler, w http.ResponseWriter, r *http.Request, params map[str
 
 func setField(field reflect.Value, param interface{}) error {
 	// TODO(ttacon: allow for struct annotations to be used
-
 	switch field.Kind() {
 	case reflect.Int:
 		fallthrough
@@ -226,6 +225,8 @@ func setField(field reflect.Value, param interface{}) error {
 			return err
 		}
 		field.SetFloat(d)
+	case reflect.String:
+		field.SetString(param.(string))
 	default:
 		return fmt.Errorf(
 			"tried to set unsupported value: %v, of type: %v",

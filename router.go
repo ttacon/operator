@@ -27,6 +27,10 @@ func (r *router) addRoute(route string, handlers []Handler) {
 func (r *router) findRoute(req *http.Request) ([]Handler, map[string]interface{}) {
 	node, expanded := r.routes.Find("/" + req.Method + req.URL.Path)
 
+	if node == nil {
+		return nil, nil
+	}
+
 	var params = make(map[string]interface{})
 	for i, name := range node.Wildcards {
 		params[name] = expanded[i]
