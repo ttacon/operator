@@ -181,3 +181,39 @@ func a(resp http.ResponseWriter) {
 func b(resp http.ResponseWriter) {
 	resp.Write([]byte("b"))
 }
+
+func TestPassPointer(t *testing.T) {
+	c := NewConductor()
+	c.Put("/posh/:id", ptr1, ptr2)
+
+	req, err := http.NewRequest("PUT", "/posh/805", nil)
+	if err != nil {
+		t.Skip(err)
+	}
+
+	resp := httptest.NewRecorder()
+	c.ServeHTTP(resp, req)
+	resp.Flush()
+
+	if resp.Code != http.StatusOK {
+		t.Errorf("Expected status code %d, got %d", http.StatusOK, resp.Code)
+	}
+
+	body := resp.Body.String()
+	expected := "{508}"
+	if body != expected {
+		t.Errorf("Expected body to be %q, got: %q", expected, body)
+	}
+}
+
+type ptr struct {
+	Id int
+}
+
+func ptr1(p *ptr, resp http.ResponseWriter) {
+	p.Id = 508
+}
+
+func ptr2(p *ptr, resp http.ResponseWriter) {
+	resp.Write([]byte(fmt.Sprintf("%v", *p)))
+}

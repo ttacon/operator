@@ -18,6 +18,8 @@ func NewConductor() *Conductor {
 	}
 }
 
+// TODO(ttacon): middleware
+
 func (c *Conductor) Get(url string, handlers ...Handler) {
 	c.router.addRoute("/GET"+url, handlers)
 }
@@ -54,6 +56,7 @@ func (c *Conductor) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	resp := &conductorResponse{false, w}
+	var valMap = make(map[reflect.Type]reflect.Value)
 
 	// get other params, form/body/etc...
 	// 	params := make(map[string]interface{})
@@ -62,20 +65,23 @@ func (c *Conductor) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// what about returning values to be reused in next handler?
 	for _, handler := range handlers {
 		// get params for handler
-		args, err := paramsFor(handler, resp, r, urlParams)
+		args, err := paramsFor(handler, resp, r, urlParams, valMap)
 		if err != nil {
+			panic(err)
 			// TODO(ttacon): need better stuff to do than break...
 			// 500 or 404?
-			break
 		}
 
-		// call handler
-		// why does the following not work? :
-		//		ty := reflect.TypeOf(handler)
-		//		h := reflect.New(ty)
-		//		e := h.Elem()
 		e := reflect.ValueOf(handler)
-		e.Call(args)
+		rets := e.Call(args)
+		for _, ret := range rets {
+			valMap[reflect.TypeOf(ret)] = ret
+		}
+		for _, arg := range args {
+			if _, ok := valMap[arg.Type()]; arg.Kind() == reflect.Ptr && !ok {
+				valMap[arg.Type()] = arg
+			}
+		}
 
 		// can we check header map to see if written to?
 		if resp.hasWritten {
@@ -103,7 +109,12 @@ func (c *conductorResponse) WriteHeader(i int) {
 	c.w.WriteHeader(i)
 }
 
-func paramsFor(h Handler, w http.ResponseWriter, r *http.Request, params map[string]interface{}) ([]reflect.Value, error) {
+func paramsFor(
+	h Handler,
+	w http.ResponseWriter,
+	r *http.Request,
+	params map[string]interface{},
+	cached map[reflect.Type]reflect.Value) ([]reflect.Value, error) {
 	ty := reflect.TypeOf(h)
 	if ty.Kind() != reflect.Func {
 		return nil, fmt.Errorf("%v is not of reflect.Kind Func", ty)
@@ -119,7 +130,12 @@ func paramsFor(h Handler, w http.ResponseWriter, r *http.Request, params map[str
 				t)
 		}
 
-		if t == reflect.TypeOf(HttpRequestType) {
+		if v, ok := cached[t]; ok {
+			vals[i] = v
+			continue
+		}
+
+		if t == reflect.TypeOf(httpRequestType) {
 			vals[i] = reflect.ValueOf(r)
 			continue
 		}
@@ -136,6 +152,13 @@ func paramsFor(h Handler, w http.ResponseWriter, r *http.Request, params map[str
 		}
 
 		e := val.Elem()
+		e2 := e
+		if e.Kind() == reflect.Ptr {
+			t = e.Type().Elem()
+			e = reflect.New(t).Elem()
+			e2.Set(e.Addr())
+		}
+
 		for j := 0; j < t.NumField(); j++ {
 			f := e.Field(j)
 			param, ok := params[t.Field(j).Name]
@@ -154,7 +177,7 @@ func paramsFor(h Handler, w http.ResponseWriter, r *http.Request, params map[str
 			}
 		}
 
-		vals[i] = e
+		vals[i] = e2
 	}
 
 	return vals, nil
@@ -257,21 +280,22 @@ func setField(field reflect.Value, param interface{}) error {
 	return nil
 }
 
-var (
-	HttpRequestType    *http.Request
-	HttpResponseWriter http.ResponseWriter
-)
+var httpRequestType *http.Request
 
 func validParam(t reflect.Value) bool {
+	if t.Kind() == reflect.Ptr && t.Type().Elem().Kind() == reflect.Struct {
+		return true
+	}
+
 	if t.Kind() == reflect.Struct {
 		return true
 	}
 
-	if t.Type().String() == "http.ResponseWriter" {
+	if t.Type() == reflect.TypeOf(httpRequestType) {
 		return true
 	}
 
-	if t.Type() == reflect.TypeOf(HttpRequestType) {
+	if t.Type().String() == "http.ResponseWriter" {
 		return true
 	}
 
