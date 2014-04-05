@@ -1,4 +1,4 @@
-package yolo
+package operator
 
 import (
 	"fmt"
@@ -83,7 +83,7 @@ func TestFullBodiedPrimitiveConductor(t *testing.T) {
 	}
 
 	body := resp.Body.String()
-	expected := "yolo.fullBodied{I8:1, I16:2, I32:1, " +
+	expected := "operator.fullBodied{I8:1, I16:2, I32:1, " +
 		"I64:256, I:64, U8:0x8, U16:0xf, U32:0x3, U64:0xa, " +
 		"U:0x0, S:\"yolo\", F32:12, F64:-18, B:true}"
 	if body != expected {

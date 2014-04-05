@@ -1,4 +1,4 @@
-package yolo
+package operator
 
 import (
 	"github.com/robfig/pathtree"
