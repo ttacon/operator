@@ -9,7 +9,8 @@ import (
 )
 
 type Conductor struct {
-	router *router
+	router    *router
+	parseBody bool
 }
 
 // NewConductor returns a new conductor for your web application.
@@ -17,6 +18,13 @@ func NewConductor() *Conductor {
 	return &Conductor{
 		router: newRouter(),
 	}
+}
+
+// ParseBody tells the operator to always parse the body of HTTP requests
+// if a Body exists.
+func (c *Conductor) ParseBody() *Conductor {
+	c.parseBody = true
+	return c
 }
 
 // Get registers a set of handlers for any HTTP GET request to the specified url.
@@ -68,6 +76,10 @@ func (c *Conductor) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	// get other params, form/body/etc...
 	// 	params := make(map[string]interface{})
+	otherParams := ParamsFrom(r)
+	for k, v := range otherParams {
+		urlParams[k] = v
+	}
 
 	// should we give an option to reuse pointered structs across functions?
 	// what about returning values to be reused in next handler?
