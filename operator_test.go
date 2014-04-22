@@ -8,8 +8,8 @@ import (
 	"testing"
 )
 
-func TestEmptyConductor(t *testing.T) {
-	c := NewConductor()
+func TestEmptyOperator(t *testing.T) {
+	c := NewOperator()
 	req, err := http.NewRequest("GET", "/yolo/5", nil)
 	if err != nil {
 		t.Skip(err)
@@ -29,8 +29,8 @@ func TestEmptyConductor(t *testing.T) {
 	}
 }
 
-func TestConductor(t *testing.T) {
-	c := NewConductor()
+func TestOperator(t *testing.T) {
+	c := NewOperator()
 	c.Get("/yolo/:id", yoloOnlyId)
 
 	req, err := http.NewRequest("GET", "/yolo/5", nil)
@@ -62,8 +62,8 @@ func yoloOnlyId(yolo yolo, req *http.Request, resp http.ResponseWriter) {
 	resp.Write([]byte(v))
 }
 
-func TestFullBodiedPrimitiveConductor(t *testing.T) {
-	c := NewConductor()
+func TestFullBodiedPrimitiveOperator(t *testing.T) {
+	c := NewOperator()
 	c.Get("/yolo/:i32/:u64/:s/:f32/:b/:i8/:i16/:u8/:i/:u16/:i64/:u32/:u/:f64",
 		fullBodiedPrimitiveFunction)
 
@@ -127,7 +127,7 @@ func twoStructsOneFunc(s1 struct1, s2 struct2, resp http.ResponseWriter) {
 }
 
 func TestTwoStructs(t *testing.T) {
-	c := NewConductor()
+	c := NewOperator()
 	c.Post("/twostructs/:MyId/onefunc/:MyId2", twoStructsOneFunc)
 
 	req, err := http.NewRequest("POST", "/twostructs/2/onefunc/1", nil)
@@ -151,7 +151,7 @@ func TestTwoStructs(t *testing.T) {
 }
 
 func TestReturnAtProperTime(t *testing.T) {
-	c := NewConductor()
+	c := NewOperator()
 	c.Put("/posh", a, b)
 
 	req, err := http.NewRequest("PUT", "/posh", nil)
@@ -183,7 +183,7 @@ func b(resp http.ResponseWriter) {
 }
 
 func TestPassPointer(t *testing.T) {
-	c := NewConductor()
+	c := NewOperator()
 	c.Put("/posh/:id", ptr1, ptr2)
 
 	req, err := http.NewRequest("PUT", "/posh/805", nil)
