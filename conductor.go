@@ -12,42 +12,50 @@ type Conductor struct {
 	router *router
 }
 
+// NewConductor returns a new conductor for your web application.
 func NewConductor() *Conductor {
 	return &Conductor{
 		router: newRouter(),
 	}
 }
 
-// TODO(ttacon): middleware
-
+// Get registers a set of handlers for any HTTP GET request to the specified url.
 func (c *Conductor) Get(url string, handlers ...Handler) {
 	c.router.addRoute("/GET"+url, handlers)
 }
 
+// Head registers a set of handlers for any HTTP HEAD request to the specified url.
 func (c *Conductor) Head(url string, handlers ...Handler) {
 	c.router.addRoute("/HEAD"+url, handlers)
 }
 
+// Put registers a set of handlers for any HTTP Put request to the specified url.
 func (c *Conductor) Put(url string, handlers ...Handler) {
 	c.router.addRoute("/PUT"+url, handlers)
 }
 
+// Post registers a set of handlers for any HTTP POST request to the specified url.
 func (c *Conductor) Post(url string, handlers ...Handler) {
 	c.router.addRoute("/POST"+url, handlers)
 }
 
+// Delete registers a set of handlers for any HTTP DELETE request to the specified url.
 func (c *Conductor) Delete(url string, handlers ...Handler) {
 	c.router.addRoute("/DELETE"+url, handlers)
 }
 
+// Options registers a set of handlers for any HTTP OPTIONS request to the specified url.
 func (c *Conductor) Options(url string, handlers ...Handler) {
 	c.router.addRoute("/OPTIONS"+url, handlers)
 }
 
+// Trace registers a set of handlers for any HTTP TRACE request to the specified url.
 func (c *Conductor) Trace(url string, handlers ...Handler) {
 	c.router.addRoute("/TRACE"+url, handlers)
 }
 
+// ServeHTTP allows you to attach this operator to the stdlib Go HTTP Server, it
+// can also be used as the entry any exit point for any http.Request/http.ResponseWrite pair.
 func (c *Conductor) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	handlers, urlParams := c.router.findRoute(r)
 	if len(handlers) == 0 {
