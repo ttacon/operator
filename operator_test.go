@@ -217,3 +217,36 @@ func ptr1(p *ptr, resp http.ResponseWriter) {
 func ptr2(p *ptr, resp http.ResponseWriter) {
 	resp.Write([]byte(fmt.Sprintf("%v", *p)))
 }
+
+func TestOperatorCamelCaseField(t *testing.T) {
+	c := NewOperator()
+	c.Get("/yolo/:userId", yoloCamelOnlyId)
+
+	req, err := http.NewRequest("GET", "/yolo/5", nil)
+	if err != nil {
+		t.Skip(err)
+	}
+
+	resp := httptest.NewRecorder()
+	c.ServeHTTP(resp, req)
+	resp.Flush()
+
+	if resp.Code != http.StatusOK {
+		t.Errorf("Expected status code %d, got %d", http.StatusOK, resp.Code)
+	}
+
+	body := resp.Body.String()
+	if !strings.Contains(body, "userId: 5") {
+		t.Errorf("Expected body to contain \"id: 5\", got: %q", body)
+	}
+}
+
+type yoloCamel struct {
+	UserId int
+}
+
+func yoloCamelOnlyId(yolo yoloCamel, req *http.Request, resp http.ResponseWriter) {
+	resp.WriteHeader(http.StatusOK)
+	v := fmt.Sprintf("userId: %d", yolo.UserId)
+	resp.Write([]byte(v))
+}

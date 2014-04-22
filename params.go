@@ -7,6 +7,7 @@ import (
 	"log"
 	"mime/multipart"
 	"net/http"
+	"strings"
 )
 
 type paramsHolder struct {
@@ -30,7 +31,14 @@ func ParamsFrom(req *http.Request) map[string]string {
 		return toReturn
 	}
 
-	switch req.Header["Content-Type"][0] {
+	fmt.Println(req.Header["Content-Type"][0])
+	fmt.Println(req.Header["Content-Type"])
+	contentType := req.Header["Content-Type"][0]
+	if strings.HasPrefix(contentType, "multipart/form-data") {
+		contentType = "multipart/form-data"
+	}
+
+	switch contentType {
 	case "application/x-www-form-urlencoded":
 		// Typical form.
 		if err := req.ParseForm(); err != nil {
@@ -68,6 +76,7 @@ func ParamsFrom(req *http.Request) map[string]string {
 			toReturn[k] = v
 		}
 	}
+	// TODO(ttacon): xml - lulz, people still use this?
 
 	for k, v := range vals {
 		toReturn[k] = v[0]

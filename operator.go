@@ -76,6 +76,9 @@ func (c *Operator) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	// get other params, form/body/etc...
 	// 	params := make(map[string]interface{})
+	// TODO(ttacon): we need to be able to interact with different kinds
+	// of files: os.File and mime/multipart for params (those two seem
+	// good enough for now, or even mime/multipart, or we could even hide that?)
 	otherParams := ParamsFrom(r)
 	for k, v := range otherParams {
 		urlParams[k] = v
@@ -183,7 +186,12 @@ func paramsFor(
 			f := e.Field(j)
 			param, ok := params[t.Field(j).Name]
 			if !ok {
-				param, ok = params[strings.ToLower(t.Field(j).Name)]
+				if param, ok = params[strings.ToLower(t.Field(j).Name)]; !ok {
+					name := t.Field(j).Name
+					name = strings.ToLower(name[0:1]) + name[1:]
+					param, ok = params[name]
+				}
+
 			}
 
 			if !ok {
