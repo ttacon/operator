@@ -201,6 +201,7 @@ func paramsFor(
 
 			if f.Kind() == reflect.Ptr {
 				pval := reflect.New(f.Type().Elem()).Elem()
+				// TODO(ttacon): recursively populate fields specified with zero values in struct tag
 				for jj := 0; jj < pval.NumField(); jj++ {
 					ff := pval.Field(jj)
 					ppval := reflect.New(ff.Type().Elem()).Elem()

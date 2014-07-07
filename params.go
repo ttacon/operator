@@ -31,8 +31,6 @@ func ParamsFrom(req *http.Request) map[string]interface{} {
 		return toReturn
 	}
 
-	fmt.Println(req.Header["Content-Type"][0])
-	fmt.Println(req.Header["Content-Type"])
 	contentType := req.Header["Content-Type"][0]
 	if strings.HasPrefix(contentType, "multipart/form-data") {
 		contentType = "multipart/form-data"
@@ -57,6 +55,7 @@ func ParamsFrom(req *http.Request) map[string]interface{} {
 		} else {
 			vals = req.MultipartForm.Value
 			files = req.MultipartForm.File
+			fmt.Println("files: ", files)
 		}
 	case "application/json":
 		// TODO(ttacon): check c.parseBody
@@ -83,8 +82,6 @@ func ParamsFrom(req *http.Request) map[string]interface{} {
 	for k, v := range vals {
 		toReturn[k] = v[0]
 	}
-	fmt.Println("val: ", vals)
-	fmt.Println("files: ", files)
 
 	return toReturn
 }
