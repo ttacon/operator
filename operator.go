@@ -199,6 +199,17 @@ func paramsFor(
 				continue
 			}
 
+			if f.Kind() == reflect.Ptr {
+				pval := reflect.New(f.Type().Elem()).Elem()
+				for jj := 0; jj < pval.NumField(); jj++ {
+					ff := pval.Field(jj)
+					ppval := reflect.New(ff.Type().Elem()).Elem()
+					ff.Set(ppval.Addr())
+					ff.Elem().Set(ppval)
+				}
+				f.Set(pval.Addr())
+			}
+
 			err := setField(f, param)
 			if err != nil {
 				return nil, err
@@ -212,6 +223,9 @@ func paramsFor(
 }
 
 func setField(field reflect.Value, param interface{}) error {
+	// TODO(ttacon): everything needs updating to deal with value not being string but
+	// being float64 if not in quotes in incoming json
+
 	// TODO(ttacon: allow for struct annotations to be used
 	switch field.Kind() {
 	case reflect.Int:
@@ -220,17 +234,50 @@ func setField(field reflect.Value, param interface{}) error {
 		// check if hex or oct, etc
 		// how to know bit size? <--- I guess default to 64 since
 		// otherwise type would be intDD
-		i, err := strconv.ParseInt(param.(string), 10, 64)
-		if err != nil {
-			return err
+		v, ok := param.(float64)
+		var (
+			i   int64
+			err error
+		)
+		if !ok {
+			i, err = strconv.ParseInt(param.(string), 10, 64)
+			if err != nil {
+				return err
+			}
+		} else {
+			i = int64(v)
 		}
 		field.SetInt(i)
 	case reflect.Int32:
+		// TODO(ttacon): json numbers are always float32
+		/*
+			{
+			  "UserId": 5
+			}
+		*/
 		// TODO(ttacon): deal with hex/oct/binary/etc...
-		i, err := strconv.ParseInt(param.(string), 10, 32)
-		if err != nil {
-			return err
+		var (
+			i   int64
+			err error
+		)
+		switch param.(type) {
+		case string:
+			i, err = strconv.ParseInt(param.(string), 10, 32)
+			if err != nil {
+				return err
+			}
+		case int32:
+			i = param.(int64)
+		case int:
+			i = param.(int64)
+		case int64:
+			i = param.(int64)
+		case float64:
+			i = int64(param.(float64))
+		default:
+			return fmt.Errorf("cannot convert %v to int32", param)
 		}
+
 		field.SetInt(i)
 	case reflect.Int16:
 		// TODO(ttacon): deal with hex/oct/binary/etc...
@@ -299,10 +346,14 @@ func setField(field reflect.Value, param interface{}) error {
 	case reflect.String:
 		field.SetString(param.(string))
 	default:
-		return fmt.Errorf(
-			"tried to set unsupported value: %v, of type: %v",
-			param,
-			field.Type())
+		if v, ok := field.Interface().(OperatorIniter); ok {
+			v.Set(param.(string))
+		} else {
+			return fmt.Errorf(
+				"tried to set unsupported value: %v, of type: %v",
+				param,
+				field.Type())
+		}
 	}
 
 	return nil
@@ -329,4 +380,8 @@ func validParam(t reflect.Value) bool {
 
 	// ensure is map[string]interface{}
 	return false
+}
+
+type OperatorIniter interface {
+	Set(v string)
 }

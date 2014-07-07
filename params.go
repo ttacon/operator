@@ -17,14 +17,14 @@ type paramsHolder struct {
 	files map[string][]*multipart.FileHeader
 }
 
-func ParamsFrom(req *http.Request) map[string]string {
+func ParamsFrom(req *http.Request) map[string]interface{} {
 	// Parse the body depending on the content type.
 	var (
 		vals     map[string][]string
 		files    map[string][]*multipart.FileHeader
-		jsonVals map[string]string
+		jsonVals map[string]interface{}
 
-		toReturn = make(map[string]string)
+		toReturn = make(map[string]interface{})
 	)
 
 	if contentTypeSlice, ok := req.Header["Content-Type"]; !ok || len(contentTypeSlice) < 1 {
@@ -66,6 +66,8 @@ func ParamsFrom(req *http.Request) map[string]string {
 			break
 		}
 
+		// crappers...
+		// TODO(ttacon): jsonVals should be map[string]interface{}
 		err = json.Unmarshal(dataBytes, &jsonVals)
 		if err != nil {
 			log.Println("err: ", err)
